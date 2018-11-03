@@ -76,34 +76,176 @@ impl<'a> UsbController<'a> {
         self.write_init_commands();
     }
 
+
+    fn get_status(&mut self) {
+
+        // returns err code and current profile
+        let buf: [u8; 7] = [
+            0x10, 0xff, 0x0f, 0x4c, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&buf);
+        self.send_ctl_7(&buf);
+    }
+
     fn write_init_commands(&mut self) {
 
         // 0x7c for color panel
         // 0x7d for dpi panel
         // either end in 'c' or 'd' will work...
-        let command_type_0 = 0x0d;
-        let command_type_1 = 0x1d;
-        let command_type_3 = 0x3d; // color setting
-        let command_type_4 = 0x4d;
-        let command_type_6 = 0x6d;
-        let command_type_7 = 0x7d;
-        let command_type_8 = 0x8d;
-        let command_type_b = 0xbd;
-        let command_type_c = 0xcd;
+        let command_type_0 = 0x0c; // reset?
+        let command_type_1 = 0x1c; // c
+        let command_type_2 = 0x2c; // check connected
+        let command_type_3 = 0x3c; // color setting
+        let command_type_4 = 0x4c; // get status, returns err and current profile
+        let command_type_6 = 0x6c;
+        let command_type_7 = 0x7c;
+        let command_type_8 = 0x8c;
+        let command_type_b = 0xbc; // error handling
+        let command_type_c = 0xcc; // error handling
 
-        let buf: [u8; 7] = [
-            0x10, 0xff, 0x0f, 0x4c, 0x00, 0x00, 0x00
+        println!("Sending commands");
+
+        // reset?
+        let reset_0: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_1, 0x00, 0x03, 0x00
         ];
-        self.send_ctl_7(&buf);
+        self.send_ctl_7(&reset_0);
 
-        let buf20: [u8; 20] = [
-            0x11, 0xff, 0x0f, 0x6c, 0x00, 0x01, 0x00, 0x00,
-            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
+        let reset_1: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_1, 0x00, 0x03, 0x39
         ];
-        self.send_ctl_20(&buf20);
+        self.send_ctl_7(&reset_1);
+
+        // reset?
+        let reset: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x00, 0x03, 0x00
+        ];
+        self.send_ctl_7(&reset);
+
+        let reset_b: [u8; 7] = [
+            0x10, 0xff, 0x02, command_type_0, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_b);
+
+        let reset_c: [u8; 7] = [
+            0x10, 0xff, 0x02, command_type_1, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_c);
+
+        let reset_d: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x00, 0x05, 0x00
+        ];
+        self.send_ctl_7(&reset_d);
+
+        let reset_e: [u8; 7] = [
+            0x10, 0xff, 0x03, command_type_2, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_e);
+
+        let reset_f: [u8; 7] = [
+            0x10, 0xff, 0x02, command_type_0, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_f);
+
+        let reset_g: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x10, 0x01, 0x00
+        ];
+        self.send_ctl_7(&reset_g);
+
+        let reset_h: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x1f, 0x20, 0x00
+        ];
+        self.send_ctl_7(&reset_h);
+
+        let reset_i: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x10, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_i);
+
+        let reset_j: [u8; 7] = [
+            0x10, 0xff, 0x02, command_type_1, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_j);
+
+        let reset_k: [u8; 7] = [
+            0x10, 0xff, 0x03, command_type_0, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_k);
+
+        let reset_l: [u8; 7] = [
+            0x10, 0xff, 0x03, command_type_1, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_l);
+
+        let reset_m: [u8; 7] = [
+            0x10, 0xff, 0x03, command_type_1, 0x10, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_m);
+
+        let reset_n: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x81, 0x10, 0x00
+        ];
+        self.send_ctl_7(&reset_n);
+
+        let reset_o: [u8; 7] = [
+            0x10, 0xff, 0x10, command_type_0, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_o);
+
+        let reset_p: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x80, 0x90, 0x00
+        ];
+        self.send_ctl_7(&reset_p);
+
+        let reset_q: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x13, 0x90, 0x00
+        ];
+        self.send_ctl_7(&reset_q);
+
+        let reset_r: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x81, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_r);
+
+        let reset_s: [u8; 7] = [
+            0x10, 0xff, 0x0f, command_type_2, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_s);
+
+        let reset_t: [u8; 7] = [
+            0x10, 0xff, 0x00, command_type_0, 0x80, 0x70, 0x00
+        ];
+        self.send_ctl_7(&reset_t);
+
+        let reset_u: [u8; 7] = [
+            0x10, 0xff, 0x0e, command_type_0, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_u);
+
+        let reset_v: [u8; 7] = [
+            0x10, 0xff, 0x0e, command_type_1, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_7(&reset_v);
+
+        // ...
+
+        let reset_w: [u8; 7] = [
+            0x10, 0xff, 0x0e, command_type_8, 0x01, 0x01, 0x00
+        ];
+        self.send_ctl_7(&reset_w);
+
+        self.get_status();
 
 
+        // the fix for err 1, x
+        let fix: [u8; 7] = [
+            0x10, 0xff, 0x0f, command_type_3, 0x00, 0x01, 0x00
+        ];
+        self.send_ctl_7(&fix);
+
+        self.get_status();
+
+        // the 7 byte packets seem to enable flags for what will be changed
         // used on setting dpi
         let buf7_8: [u8; 7] = [
             0x10, 0xff, 0x0f, command_type_b, 0x00, 0x00, 0x00
@@ -116,42 +258,70 @@ impl<'a> UsbController<'a> {
         ];
         self.send_ctl_7(&buf7_7);
 
-        // used on setting dpi
-        let buf7_9: [u8; 7] = [
-            0x10, 0xff, 0x0f, command_type_6, 0x00, 0x01, 0x00
+        self.get_status();
+
+
+        // this seems to be the beginning of altering the settings
+        // all of the following command type 7 following are connected
+        let buf20: [u8; 20] = [
+            0x11, 0xff, 0x0f, command_type_6, 0x00, 0x01, 0x00, 0x00,
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
         ];
-        self.send_ctl_7(&buf7_9);
+        self.send_ctl_20(&buf20);
+
+        // 0x01 = 1000hz
+        // 0x02 = 500hz
+        let poll_rate = 0x01;
 
         println!("Set DPI");
         // 0x7d or 0x7c ?
-        // possibly the dpi settings
+        // The dpi settings
+        // should be ordered low to high
         // 1st: 0x0190
         // 2st: 0x0320
-        let buf20_0: [u8; 20] = [
-            0x11, 0xff, 0x0f, command_type_7, 0x01, 0x01, 0x00, 0x90,
+        let buf20_7a: [u8; 20] = [
+            0x11, 0xff, 0x0f, command_type_7, poll_rate, 0x01, 0x00, 0x90,
             0x01, 0x20, 0x03, 0x40, 0x06, 0x80, 0x0c, 0x00,
             0x00, 0xff, 0xff, 0xff
         ];
-        self.send_ctl_20(&buf20_0);
+        self.send_ctl_20(&buf20_7a);
 
-        // 0x10 for colors is sometimes 0x17 or 0x19 for dpi change
-        let cmd_param = 0x19;
-        let buf20_01: [u8; 20] = [
+        // seems to link to the last 2 bytes somehow
+        // 2f -> e1 b6
+        // 30 -> 4c 75
+        // 33 -> 70 86
+        // 35 -> e5 73
+        // 2f -> e1 b6
+        // 37 -> 96 20
+
+        // 500hz
+        // 30 -> 4c 75
+        // 31 -> 03 d5
+        // 32 -> 3f 26
+        // 34 -> aa d3
+        // 36 -> d9 80
+        let cmd_param = 0x2f;
+        let checksum_a = 0xe1;
+        let checksum_b = 0xb6;
+
+        let buf20_7b: [u8; 20] = [
             0x11, 0xff, 0x0f, command_type_7, 0xff, 0x00, cmd_param, 0x00,
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
             0xff, 0xff, 0xff, 0xff
         ];
-        self.send_ctl_20(&buf20_01);
+        self.send_ctl_20(&buf20_7b);
 
-
-        let buf20_1: [u8; 20] = [
+        // the next 3-4 blocks seems connected
+        // this section is sometimes played twice
+        let buf20_7c: [u8; 20] = [
             0x11, 0xff, 0x0f, command_type_7, 0x80, 0x01, 0x00, 0x01,
             0x80, 0x01, 0x00, 0x02, 0x80, 0x01, 0x00, 0x04,
             0x80, 0x01, 0x00, 0x08
         ];
-        self.send_ctl_20(&buf20_1);
+        self.send_ctl_20(&buf20_7c);
 
-        // this section is played twice
+        // is 0x0590 the polling rate?
         let buf20_2: [u8; 20] = [
             0x11, 0xff, 0x0f, command_type_7, 0x80, 0x01, 0x00, 0x10,
             0x90, 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -167,12 +337,35 @@ impl<'a> UsbController<'a> {
         ];
         self.send_ctl_20(&buf20_21);
 
+        // gets sent twice?
         let buf20_22: [u8; 20] = [
             0x11, 0xff, 0x0f, command_type_7, 0x80, 0x01, 0x00, 0x01,
             0x80, 0x01, 0x00, 0x02, 0x80, 0x01, 0x00, 0x04,
             0x80, 0x01, 0x00, 0x08
         ];
-        self.send_ctl_20(&buf20_22);
+        //self.send_ctl_20(&buf20_22);
+        //self.send_ctl_20(&buf20_22);
+
+        let buf20_22b: [u8; 20] = [
+            0x11, 0xff, 0x0f, command_type_7, 0x80, 0x01, 0x00, 0x10,
+            0x90, 0x05, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_20(&buf20_22b);
+
+        let buf20_22c: [u8; 20] = [
+            0x11, 0xff, 0x0f, command_type_7, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_20(&buf20_22c);
+
+        let buf20_22d: [u8; 20] = [
+            0x11, 0xff, 0x0f, command_type_7, 0x01, 0xff, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0xff, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_20(&buf20_22d);
 
 
         // this section seems to apply settings
@@ -213,17 +406,25 @@ impl<'a> UsbController<'a> {
         ];
         self.send_ctl_20(&buf20_31);
 
+        // what are the last 2 bytes?
+        let buf20_32: [u8; 20] = [
+            0x11, 0xff, 0x0f, command_type_7, 0xff, 0xff, 0xff, 0xff,
+            0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, checksum_a, checksum_b
+        ];
+        self.send_ctl_20(&buf20_32);
+
+        // the end of the command type 7 sequence
         let buf7_4: [u8; 7] = [
             0x10, 0xff, 0x0f, command_type_8, 0x00, 0x00, 0x00
         ];
         self.send_ctl_7(&buf7_4);
 
-        // repeat first msg
-        let buf7_5: [u8; 7] = [
-            0x10, 0xff, 0x0f, command_type_4, 0x00, 0x00, 0x00
-        ];
-        self.send_ctl_7(&buf7_5);
+        // extra output
 
+        self.get_status();
+
+        // only for the LED control
         let buf7_6: [u8; 7] = [
             0x10, 0xff, 0x0e, command_type_0, 0x00, 0x00, 0x00
         ];
@@ -298,10 +499,19 @@ impl<'a> UsbController<'a> {
      */
     fn print_status(&mut self) {
         let mut buf: [u8; 20] = [0; 20];
-        let result = self.handle.read_interrupt(self.read_address, &mut buf, Duration::from_secs(10)).unwrap();
-        println!("read {:03} bytes", result);
-        for b in &buf {
-            print!("{:x}, ", b);
+        let mut bit_3 = 0x00;
+        let mut bit_5 = 0xff;
+
+        // the packets with byte 3 == 0, need to be skipped
+        while bit_3 == 0 {
+            let result = self.handle.read_interrupt(self.read_address, &mut buf, Duration::from_secs(10)).unwrap();
+            bit_3 = buf[3];
+            bit_5 = buf[5];
+            print!("read {:03} bytes: ", result);
+            for b in &buf {
+                print!("{:x}, ", b);
+            }
+            println!("");
         }
     }
 }
