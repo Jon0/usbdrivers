@@ -1,0 +1,8 @@
+[package]
+name = "usb-led"
+version = "0.1.0"
+authors = ["Jon0 <Jono4728@gmail.com>"]
+
+[dependencies]
+rand = "0.3"
+libusb = "0.3"
