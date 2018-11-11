@@ -1,8 +1,6 @@
-# usb-led
+# logictl
 
-Linux driver for the corsair lighting node pro (1b1c:0c0b)
-
-Program arguments: `--mode` or `-m` mode number 0-10
+Linux driver for the Logitech G Pro wired 046d:c08c
 
 Build:
 `cargo build`
