@@ -163,6 +163,23 @@ impl<'a> UsbController<'a> {
         self.read_response(&mut resp);
     }
 
+
+    /**
+     * Param is unknown, usually set to 0x01
+     */
+    fn send_3_color(&mut self, di: u8, fi: u8, swid: u8, led_mode: u8, led_r: u8, led_g: u8, led_b: u8, cycle_a: u8, cycle_b: u8, cycle_c: u8, param: u8) {
+        let command_3 = 0x30 + swid;
+        let buf: [u8; 20] = [
+            0x11, di, fi, command_3, 0x00, led_mode, led_r, led_g,
+            led_b, param, 0x00, cycle_a, cycle_b, cycle_c, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        ];
+        self.send_ctl_packet_20(&buf);
+
+        let mut resp: [u8; 20] = [0; 20];
+        self.read_response(&mut resp);
+    }
+
     /**
      * Returns an error code and current profile
      */
@@ -316,12 +333,21 @@ impl<'a> UsbController<'a> {
         // 0x00 = change profile
         // 0x01 = 1000hz
         // 0x02 = 500hz
-        let poll_rate = 0x01;
+        let mut use_poll_rate = 0x01;
+        if (poll_rate == 500) {
+            use_poll_rate = 0x02;
+        }
+        else if (poll_rate == 333) {
+            use_poll_rate = 0x03;
+        }
+        else if (poll_rate == 250) {
+            use_poll_rate = 0x04;
+        }
 
         // this must be incremented by 1 on each write
-        let cmd_param = write_id; //0x1d;
-        let checksum_a = 0xff;//0xcd; // bytes for 0x1d
-        let checksum_b = 0xff;//0xc4;
+        let cmd_param = write_id;
+        let checksum_a = 0xff;
+        let checksum_b = 0xff;
 
         // send a 256 byte set of data
         // Line 0 is the dpi settings
@@ -340,32 +366,29 @@ impl<'a> UsbController<'a> {
         let mut dpi_5_hi = 0x00; // 0 to disable
         let mut dpi_5_lo = 0x00;
 
-        // if dpi_array.len() > 0 {
-        //     dpi_1_hi = (dpi_array[0] >> 8) as u8;
-        //     dpi_1_lo = (dpi_array[0] & 0xff) as u8;
-        // }
-        // if dpi_array.len() > 1 {
-        //     dpi_2_hi = (dpi_array[1] >> 8) as u8;
-        //     dpi_2_lo = (dpi_array[1] & 0xff) as u8;
-        // }
-        // if dpi_array.len() > 2 {
-        //     dpi_3_hi = (dpi_array[2] >> 8) as u8;
-        //     dpi_3_lo = (dpi_array[2] & 0xff) as u8;
-        // }
-        // if dpi_array.len() > 3 {
-        //     dpi_4_hi = (dpi_array[3] >> 8) as u8;
-        //     dpi_4_lo = (dpi_array[3] & 0xff) as u8;
-        // }
-        // if dpi_array.len() > 4 {
-        //     dpi_5_hi = (dpi_array[4] >> 8) as u8;
-        //     dpi_5_lo = (dpi_array[4] & 0xff) as u8;
-        // }
-
-        println!("DPI {:02x}, {:02x}", dpi_2_hi, dpi_2_lo);
-
+        if dpi_array.len() > 0 {
+            dpi_1_hi = (dpi_array[0] >> 8) as u8;
+            dpi_1_lo = (dpi_array[0] & 0xff) as u8;
+        }
+        if dpi_array.len() > 1 {
+            dpi_2_hi = (dpi_array[1] >> 8) as u8;
+            dpi_2_lo = (dpi_array[1] & 0xff) as u8;
+        }
+        if dpi_array.len() > 2 {
+            dpi_3_hi = (dpi_array[2] >> 8) as u8;
+            dpi_3_lo = (dpi_array[2] & 0xff) as u8;
+        }
+        if dpi_array.len() > 3 {
+            dpi_4_hi = (dpi_array[3] >> 8) as u8;
+            dpi_4_lo = (dpi_array[3] & 0xff) as u8;
+        }
+        if dpi_array.len() > 4 {
+            dpi_5_hi = (dpi_array[4] >> 8) as u8;
+            dpi_5_lo = (dpi_array[4] & 0xff) as u8;
+        }
 
         let mut packets: [[u8; 16]; 16] = [
-            [poll_rate, 0x01, 0x00, dpi_1_lo, dpi_1_hi, dpi_2_lo, dpi_2_hi, dpi_3_lo, dpi_3_hi, dpi_4_lo, dpi_4_hi, dpi_5_lo, dpi_5_hi, 0xff, 0xff, 0xff],
+            [use_poll_rate, 0x01, 0x00, dpi_1_lo, dpi_1_hi, dpi_2_lo, dpi_2_hi, dpi_3_lo, dpi_3_hi, dpi_4_lo, dpi_4_hi, dpi_5_lo, dpi_5_hi, 0xff, 0xff, 0xff],
             [0xff, 0x00, cmd_param, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
             [0x80, 0x01, 0x00, 0x01, 0x80, 0x01, 0x00, 0x02, 0x80, 0x01, 0x00, 0x04, 0x80, 0x01, 0x00, 0x08],
             [0x80, 0x01, 0x00, 0x10, 0x90, 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
@@ -383,32 +406,38 @@ impl<'a> UsbController<'a> {
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, checksum_a, checksum_b], // sometimes has 0x00 in byte 4-6
         ];
 
-        let mut digest = crc16::Digest::new_with_initial(crc16::USB, 0xffff);
-        let mut crc_0 = 0x0000;
+        // run each byte in order into the crc function
+        // but skip the last 2 bytes from the last line
+        let mut crc_value = 0xffff;
+        let mut crc_count = 0;
         for &packet in &packets {
-            //let mut g = [0; 16];
-            //g.clone_from_slice(&packet);
-            //g.reverse();
-            digest.write(&packet);
-
-            for x in 0..packet.len() {
-                //let data = ((packet[(x * 2) + 0] as u16) << 8) + (packet[(x * 2) + 1] as u16);
-                crc_0 = UsbController::crc_update(crc_0, packet[x]);
+            let mut range = packet.len();
+            if crc_count == 0xf0 {
+                range = packet.len() - 2; // skip last 2 bytes
+            }
+            for x in 0..range {
+                crc_value = UsbController::crc_update(crc_value, packet[x]);
+                crc_count += 1;
             }
         }
-        println!("CRC {:04x}", digest.sum16());
-        println!("CRC {:04x}", crc_0);
 
-        // this is the correct crc.
+        let crc_lo = (crc_value & 0xff) as u8;
+        let crc_hi = (crc_value >> 8) as u8;
+        println!("CRC {:02x}:{:02x}", crc_hi, crc_lo);
+
+        // cd, c4 is the correct crc.
         // how is it calculated?
-        packets[15][14] = 0xcd;
-        packets[15][15] = 0xc4;
+        packets[15][14] = crc_hi;
+        packets[15][15] = crc_lo;
 
         for &packet in &packets {
             self.send_7_record(di, fi, swid, packet);
         }
     }
 
+    /**
+     * Copy of devices crc function
+     */
     fn crc_update(mut crc: u16, data: u8) -> u16 {
       crc ^= ((data as u16) << 8);
       for x in 0..8 {
@@ -425,7 +454,7 @@ impl<'a> UsbController<'a> {
 
 
     fn send_group_7_enable_profile(&mut self, di: u8, fi: u8, swid: u8) {
-        println!("Set Profile");
+        println!("Enable Profile");
 
         let checksum_a = 0xe5;
         let checksum_b = 0xda;
@@ -465,6 +494,9 @@ impl<'a> UsbController<'a> {
         }
     }
 
+    /*
+     * Runs when device is first connected
+     */
     fn write_init_commands(&mut self) {
 
         let device_index = 0xff;
@@ -550,6 +582,7 @@ impl<'a> UsbController<'a> {
 
     /**
      * Writes 7 byte packets to 0x0210
+     * Use send_ctl_packet_7 instead
      */
     fn send_ctl_7(&mut self, msg: &[u8]) {
         println!("write ctl {:03} bytes", msg.len());
@@ -559,6 +592,7 @@ impl<'a> UsbController<'a> {
 
     /**
      * Writes 20 byte packets to 0x0211
+     * Use send_ctl_packet_20 instead
      */
     fn send_ctl_20(&mut self, msg: &[u8]) {
         println!("write ctl {:03} bytes", msg.len());
@@ -637,7 +671,7 @@ impl<'a> UsbController<'a> {
     /**
      * Mode: 0x00 = off, 0x01 = static, 0x02 = cycle
      */
-    fn apply_color(&mut self, mode: u8) {
+    fn apply_color(&mut self, mode: &LedMode) {
         let device_index = 0xff;
         let feature_index = 0x0f; // 0x0f is dpi, 0x0e is leds
         let swid = 0xa;
@@ -647,27 +681,43 @@ impl<'a> UsbController<'a> {
         // only for the LED control
         self.send_0_root(device_index, 0x0e, swid, 0x00, 0x00, 0x00);
 
-        let led_mode = mode; // 0x00 = off, 0x01 = static, 0x02 = cycle
-        let led_r = 0x00;
-        let led_g = 0xff;
-        let led_b = 0x00;
+        let mut mode_id = 0x00;
+
+        // static mode params
+        let mut led_r = 0x00;
+        let mut led_g = 0x00;
+        let mut led_b = 0x00;
 
         // cycle mode params (are 0x00 for other modes)
-        let cycle_a = 0x2a; // speed major
-        let cycle_b = 0xf8; // speed minor
-        let cycle_c = 0x64; // brightness
+        let mut cycle_a = 0x2a; // speed major
+        let mut cycle_b = 0xf8; // speed minor
+        let mut cycle_c = 0x64; // brightness
+        let mut unknown = 0x01;
 
-        // final msg sets led colors
-        let command_3 = 0x30 + swid;
-        let buf: [u8; 20] = [
-            0x11, 0xff, 0x0e, command_3, 0x00, led_mode, led_r, led_g,
-            led_b, 0x01, 0x00, cycle_a, cycle_b, cycle_c, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        ];
-        self.send_ctl_20(&buf);
+        match mode {
+            LedMode::Off => {
+                mode_id = 0x00;
+            }
+            LedMode::Static {r, g, b} => {
+                mode_id = 0x01;
+                led_r = *r;
+                led_g = *g;
+                led_b = *b;
+            },
+            LedMode::Cycle {speed, brightness} => {
+                mode_id = 0x02;
+                cycle_a = (*speed >> 8) as u8;
+                cycle_b = (*speed & 0xff) as u8;
+                cycle_c = *brightness;
+            }
+        }
+
+        self.send_3_color(device_index, 0x0e, swid, mode_id, led_r, led_g, led_b, cycle_a, cycle_b, cycle_c, unknown);
     }
 
-
+    /**
+     * Not used, but keeping example of reading existing settings
+     */
     fn before_apply(&mut self, profile: u8) {
         let device_index = 0xff;
         let feature_index = 0x0f; // 0x0f is dpi, 0x0e is leds
@@ -733,9 +783,6 @@ impl<'a> UsbController<'a> {
 }
 
 
-
-
-
 fn print_endpoint(endpoint: libusb::EndpointDescriptor) {
     println!("Endpoint address {:02x}", endpoint.address());
     println!("Endpoint number {:02x}", endpoint.number());
@@ -769,6 +816,9 @@ fn print_device(device: &libusb::Device) {
     }
 }
 
+enum LedMode {
+    Off, Static { r: u8, g: u8, b: u8 }, Cycle { speed: u16, brightness: u8 }
+}
 
 struct Config {
     vendor_id: u16,
@@ -776,7 +826,12 @@ struct Config {
     print_endpoints: bool,
     print_status: bool,
     clear_queue: bool,
-    switch_to_profile: u8
+    switch_to_profile: u8,
+    write_profile: bool,
+    write_color: bool,
+    poll_rate: u16,
+    dpi_array: [u16; 5],
+    led_mode: LedMode,
 }
 
 
@@ -785,10 +840,15 @@ impl Config {
         Config {
             vendor_id: 0x046d,
             product_id: 0xc08c,
-            print_endpoints: true,
-            print_status: true,
+            print_endpoints: false,
+            print_status: false,
             clear_queue: true,
-            switch_to_profile: 0x00
+            switch_to_profile: 0x00,
+            write_profile: false,
+            write_color: false,
+            poll_rate: 1000,
+            dpi_array: [400, 800, 1600, 3200, 0],
+            led_mode: LedMode::Static{ r: 0xff, g: 0xff, b: 0x00 }
         }
     }
 }
@@ -817,9 +877,13 @@ fn select_device(device: libusb::Device, config: &Config) {
         controller.switch_to_profile(config.switch_to_profile);
     }
 
-    controller.apply_settings(config.switch_to_profile, 1000, &[400, 650, 1600, 3200]);
+    if config.write_profile {
+        controller.apply_settings(config.switch_to_profile, config.poll_rate, &config.dpi_array);
+    }
 
-    controller.apply_color(0x00);
+    if config.write_color {
+        controller.apply_color(&config.led_mode);
+    }
 
     if config.print_status {
         controller.print_status();
@@ -831,7 +895,36 @@ fn select_device(device: libusb::Device, config: &Config) {
 fn main() {
     let mut config = Config::default();
 
+    let mut read_color = false;
+    let mut read_profile = false;
     let args: Vec<String> = env::args().collect();
+    for arg in args {
+
+        if read_color {
+            let parts: Vec<&str> = arg.split(',').collect();
+            if (parts.len() == 3) {
+                let r = parts[0].parse::<u8>().unwrap();
+                let g = parts[1].parse::<u8>().unwrap();
+                let b = parts[2].parse::<u8>().unwrap();
+                config.write_color = true;
+                config.led_mode = LedMode::Static{ r: r, g: g, b: b };
+            }
+            read_color = false;
+        }
+        else if read_profile {
+            config.switch_to_profile = arg.parse::<u8>().unwrap();
+            read_profile = false;
+        }
+        else if arg == "--color" {
+            read_color = true;
+        }
+        else if arg == "--switch-profile" {
+            read_profile = true;
+        }
+        else if arg == "--status" {
+            config.print_status = true;
+        }
+    }
 
     // device selection
     let mut context = libusb::Context::new().unwrap();
